@@ -36,6 +36,11 @@ wall-relationship locks, and known-dimension plan calibration. The geometry engi
 independently of widgets and screen pixels. See [EasyFloor Drawing](docs/EASYFLOOR_DRAWING.md).
 See [Whole-stroke refinement](docs/EASYFLOOR_WHOLE_STROKE_REFINEMENT.md) for
 chain boundaries, preview behavior, validation and verification limits.
+The temporary [Tape Measure](docs/EASYFLOOR_TAPE_MEASURE.md) measures between
+arbitrary points or snapped corners/edges, supports endpoint adjustment and
+selected units, and never adds wall geometry or measurement history.
+Use [Dashed walls](docs/EASYFLOOR_DASHED_WALLS.md) for proposed layouts, with
+undoable conversion to normal walls and styling preserved in saved drawings.
 Preset dimensions use a live lettered diagram, editable L/U/T arm sizes and the
 same geometry as placement. Keyboard-safe scrolling keeps focused labels and
 inputs visible; compact views scroll the preview while actions stay accessible.

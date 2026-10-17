@@ -6,7 +6,9 @@ import 'drawing_precision.dart';
 
 /// Sketch candidates in mm. Neither candidate mutates the connected wall graph.
 class SketchRefinement {
-  const SketchRefinement(this.original, this.refined, this.shape);
+  const SketchRefinement(this.original, this.refined, this.shape,
+      {this.dashed = false});
+  final bool dashed;
   final List<DrawingPoint> original, refined;
   final ShapePreset? shape;
 
@@ -171,7 +173,11 @@ class SketchRefinement {
         if (linked.length != 2) break;
         final nextId =
             linked.firstWhere((id) => !ids.contains(id), orElse: () => -1);
-        if (nextId == -1 || protected(nextId)) break;
+        if (nextId == -1 ||
+            protected(nextId) ||
+            model.walls[nextId]!.dashed != wall.dashed) {
+          break;
+        }
         final edge = model.walls[nextId]!;
         final other = edge.start == node ? edge.end : edge.start;
         final point = model.corners[other]!;
@@ -208,7 +214,7 @@ class SketchRefinement {
     for (final id in ids) {
       next.deleteWall(id);
     }
-    next.addPolyline([points.first, points.last]);
+    next.addPolyline([points.first, points.last], dashed: wall.dashed);
     for (final edge in model.walls.values.where((w) => !ids.contains(w.id))) {
       final retained = next.walls[edge.id];
       if (retained == null ||

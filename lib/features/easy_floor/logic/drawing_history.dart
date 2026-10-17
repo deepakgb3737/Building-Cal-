@@ -30,17 +30,18 @@ class DrawingHistory {
     final s = _states[_index].$3;
     return s == null
         ? null
-        : SketchRefinement(List.of(s.original), List.of(s.refined), s.shape);
+        : SketchRefinement(List.of(s.original), List.of(s.refined), s.shape,
+            dashed: s.dashed);
   }
 
   void commit(WallNetwork model,
       {DrawingAnnotations? annotations, SketchRefinement? sketch}) {
     String signature(WallNetwork m) =>
-        '${m.corners.entries.map((e) => '${e.key}:${e.value.x},${e.value.y}').join(';')}|${m.walls.values.map((e) => '${e.id}:${e.start},${e.end},${e.fixedLength}').join(';')}|${m.constraintSignature}';
+        '${m.corners.entries.map((e) => '${e.key}:${e.value.x},${e.value.y}').join(';')}|${m.walls.values.map((e) => '${e.id}:${e.start},${e.end},${e.fixedLength},${e.dashed}').join(';')}|${m.constraintSignature}';
     final notes = annotations ?? _states[_index].$2;
     String draftSignature(SketchRefinement? s) => s == null
         ? ''
-        : '${s.shape}|${[
+        : '${s.shape}|${s.dashed}|${[
             s.original,
             s.refined
           ].map((points) => points.map((p) => '${p.x},${p.y}').join(';')).join('|')}';
@@ -57,7 +58,8 @@ class DrawingHistory {
       sketch == null
           ? null
           : SketchRefinement(
-              List.of(sketch.original), List.of(sketch.refined), sketch.shape)
+              List.of(sketch.original), List.of(sketch.refined), sketch.shape,
+              dashed: sketch.dashed)
     ));
     _revisions.add(_nextRevision++);
     if (_states.length > 51) {

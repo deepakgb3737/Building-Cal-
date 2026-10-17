@@ -27,6 +27,10 @@ are included.
 coordinates in mm, fixed measured spans, wall relationships, calibration,
 annotation IDs/content/formatting/positions, units, drawing assistance and view
 settings. Units serialize by stable symbol, not localized display name.
+Wall rows optionally include a fifth boolean for dashed styling. Missing flags
+load as normal solid walls. Geometry, locks and wall IDs remain unchanged when
+converting styles. Older app versions may not read drawings containing this new
+optional field; use the updated app when reopening proposed layouts.
 
 `logic/document_repository.dart` validates complete snapshots, names, IDs and
 file size before writing. Names are trimmed, whitespace-normalized and unique

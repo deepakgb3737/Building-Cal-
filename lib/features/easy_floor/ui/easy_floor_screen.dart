@@ -32,7 +32,7 @@ import '../logic/document_platform_store.dart';
 import '../logic/floor_document.dart';
 import 'document_workspace.dart';
 
-enum _Tool { smart, draw, wall, corner, pan, group, text }
+enum _Tool { smart, draw, wall, corner, pan, group, text, tape }
 
 class EasyFloorScreen extends StatefulWidget {
   const EasyFloorScreen(
@@ -203,6 +203,26 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
   double? _moveOffset;
   DrawingUnit _unit = DrawingUnit.metres;
   bool _outline = true;
+  bool _drawDashed = false;
+  (DrawingPoint, DrawingPoint)? _tape, _tapeBefore;
+  bool _tapeSnap = true;
+  bool _tapeStartHandle = false;
+
+  DrawingPoint _tapePoint(Offset position) {
+    final point = world(position);
+    final corner = _tapeSnap ? _model.nearestCorner(point, 12 / _scale) : null;
+    final snapped = corner != null
+        ? _model.corners[corner]!
+        : _tapeSnap
+            ? _model.snap(point, 12 / _scale)
+            : point;
+    _connection = _tapeSnap &&
+            (corner != null || _model.nearestWall(snapped, .001) != null)
+        ? snapped
+        : null;
+    return snapped;
+  }
+
   final bool _snapping = true;
   bool _alignment = true, _continueDrawing = false;
   bool _pressedSelectedCorner = false;
@@ -576,6 +596,25 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
     _error = null;
     _editConflict = false;
     _dragIntent = false;
+    if (_tool == _Tool.tape) {
+      _tapeBefore = _tape;
+      _gestureTool = _Tool.tape;
+      if (_multiTouch) return;
+      setState(() {
+        final start = _pointerDown ?? details.localFocalPoint;
+        _tapeStartHandle = _tape != null &&
+            (_tape!.$1 - _dragStart!).length * _scale <= 22 &&
+            (_tape!.$1 - _dragStart!).length <=
+                (_tape!.$2 - _dragStart!).length;
+        final endHandle =
+            _tape != null && (_tape!.$2 - _dragStart!).length * _scale <= 22;
+        if (!_tapeStartHandle && !endHandle) {
+          final point = _tapePoint(start);
+          _tape = (point, point);
+        }
+      });
+      return;
+    }
     if (_multiTouch) return;
     if (_suggestion != null) {
       _gestureTool = _Tool.pan;
@@ -730,6 +769,7 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
     if (details.pointerCount > 1) {
       setState(() {
         if (!_multiTouch) {
+          if (_gestureTool == _Tool.tape) _tape = _tapeBefore;
           _model = _before!.copy();
           _annotations = _beforeAnnotations!.copy();
           _error = null;
@@ -766,6 +806,14 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
       return;
     }
     if (_multiTouch) return;
+    if (_gestureTool == _Tool.tape) {
+      setState(() {
+        final point = _tapePoint(details.localFocalPoint);
+        _tape = _tapeStartHandle ? (point, _tape!.$2) : (_tape!.$1, point);
+        _finger = details.localFocalPoint;
+      });
+      return;
+    }
     if (_suggestion != null) return;
     if (!_dragIntent) {
       if ((details.localFocalPoint - _startFocal).distance <
@@ -1047,6 +1095,17 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
 
   void _end(ScaleEndDetails details) {
     if (_before == null) return;
+    if (_gestureTool == _Tool.tape) {
+      setState(() {
+        _before = null;
+        _beforeAnnotations = null;
+        _pointerDown = null;
+        _finger = null;
+        _connection = null;
+        _guides = [];
+      });
+      return;
+    }
     if (_suggestion != null || _preset != null || _polygon) {
       setState(() {
         _before = null;
@@ -1083,7 +1142,7 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
                 recognize: _recognition &&
                     !_preview.any((p) => _model.nearestWall(p, .001) != null));
             if (cleanup.original.length == 2 && cleanup.refined.length == 2) {
-              _model.addPolyline(cleanup.refined);
+              _model.addPolyline(cleanup.refined, dashed: _drawDashed);
             } else {
               _suggestion = ShapeSuggestion(
                   cleanup.shape ?? ShapePreset.polygon, cleanup.refined);
@@ -1092,7 +1151,7 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
               _refinementPreview = false;
             }
           } else {
-            _model.addPolyline(_preview);
+            _model.addPolyline(_preview, dashed: _drawDashed);
           }
         } else if (!_multiTouch &&
             (_gestureTool == _Tool.wall ||
@@ -1149,6 +1208,10 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
   }
 
   void _select(TapUpDetails details) {
+    if (_tool == _Tool.tape) {
+      _pointerDown = null;
+      return;
+    }
     if (_textEditing ||
         _navigationLocked ||
         (_multiTouch && _pointerDown == null)) {
@@ -1279,6 +1342,20 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
   }
 
   void _cancelGesture() {
+    if (_tool == _Tool.tape && _before != null) {
+      setState(() {
+        _tape = _tapeBefore;
+        _before = null;
+        _beforeAnnotations = null;
+        _pointerDown = null;
+        _finger = null;
+        _connection = null;
+        _guides = [];
+        _origin = _startOrigin;
+        _scale = _startScale;
+      });
+      return;
+    }
     if (_before != null && _suggestion != null) {
       setState(() {
         _origin = _startOrigin;
@@ -1358,6 +1435,7 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
       _stroke = [];
       _preview = [];
       _tool = _Tool.smart;
+      _tape = null;
       _pointerDown = null;
       _suggestion = null;
       _refinementPreview = false;
@@ -1478,6 +1556,7 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
       _annotations = _history.annotations;
       final sketch = _history.sketch;
       if (sketch != null) {
+        _drawDashed = sketch.dashed;
         _suggestionBase = _model.copy();
         _suggestion = ShapeSuggestion(
             sketch.shape ?? ShapePreset.polygon, List.of(sketch.refined));
@@ -1597,12 +1676,13 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
             : [..._polygonPoints, _polygonPoints.first];
     try {
       final next = (_suggestionBase ?? _model).copy();
-      next.addPolyline(points);
+      next.addPolyline(points, dashed: _drawDashed);
       if (_suggestion != null && !original) {
         _history.commit(_suggestionBase ?? _model,
             annotations: _annotations,
             sketch: SketchRefinement(List.of(_originalShape),
-                List.of(_suggestion!.points), _suggestion!.kind));
+                List.of(_suggestion!.points), _suggestion!.kind,
+                dashed: _drawDashed));
       }
       _cancel();
       setState(() {
@@ -1642,6 +1722,7 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
                                   scale: fit.$1,
                                   unit: _unit,
                                   preview: points,
+                                  previewDashed: _model.walls[id]!.dashed,
                                   showAllMeasurements: true));
                         })),
                   ]),
@@ -2080,6 +2161,15 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
                       Text('More', style: AppTypography.drawingToolLabel)
                     ]))),
         onSelected: (value) {
+          if (value == 'normalWall' || value == 'dashedWall') {
+            _chooseStroke(false);
+            setState(() {
+              _drawDashed = value == 'dashedWall';
+              _selectedWall = null;
+              _selectedCorner = null;
+            });
+            return;
+          }
           if (value == 'help') {
             _showDrawingHelp();
             return;
@@ -2097,6 +2187,14 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
           });
         },
         itemBuilder: (_) => [
+          CheckedPopupMenuItem(
+              value: 'normalWall',
+              checked: !_drawDashed,
+              child: const Text('Normal wall')),
+          CheckedPopupMenuItem(
+              value: 'dashedWall',
+              checked: _drawDashed,
+              child: const Text('Dashed wall')),
           const PopupMenuItem(value: 'help', child: Text('Drawing help')),
           CheckedPopupMenuItem(
               value: 'grid',
@@ -2133,9 +2231,10 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
       _stroke = [];
       _preview = [];
       _tool = tool;
+      _tape = null;
       _selectedAnnotations.clear();
       _multiText = false;
-      if (tool == _Tool.text || tool == _Tool.pan) {
+      if (tool == _Tool.text || tool == _Tool.pan || tool == _Tool.tape) {
         _multiSelect = false;
         _pickedWalls.clear();
         _pickedCorners.clear();
@@ -2150,6 +2249,16 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
   void _chooseStroke(bool outline) {
     _chooseTool(_Tool.smart);
     setState(() => _outline = outline);
+  }
+
+  void _convertWallType() {
+    final id = _selectedWall;
+    if (id == null || _before != null || _pointers.isNotEmpty) return;
+    setState(() {
+      _model.setDashed(id, !_model.walls[id]!.dashed);
+      _history.commit(_model);
+      _error = null;
+    });
   }
 
   Future<void> _showDrawingHelp() async {
@@ -2224,6 +2333,13 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
 
   Widget _primaryControls() => DrawingToolbarRow(children: [
         drawingTool(
+            label: 'Tape',
+            tooltip: 'Tape Measure',
+            icon: Icons.straighten,
+            selected: _tool == _Tool.tape,
+            onPressed: () =>
+                _chooseTool(_tool == _Tool.tape ? _Tool.smart : _Tool.tape)),
+        drawingTool(
             label: 'Undo',
             icon: Icons.undo,
             onPressed: _history.canUndo ? () => _restore(true) : null),
@@ -2248,67 +2364,91 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
           _assistanceMenu(),
       ]);
 
-  Widget _controls() => (_suggestion != null || _preset != null || _polygon)
-      ? _pendingControls()
-      : _multiSelect
-          ? Column(mainAxisSize: MainAxisSize.min, children: [
-              _groupControls(),
-              DrawingToolbarRow(children: [
-                drawingTool(
-                    label: 'Undo',
-                    icon: Icons.undo,
-                    onPressed: _history.canUndo ? () => _restore(true) : null),
-                drawingTool(
-                    label: 'Redo',
-                    icon: Icons.redo,
-                    onPressed: _history.canRedo ? () => _restore(false) : null),
-                if (_canDeleteGeometry)
+  Widget _controls() => _tool == _Tool.tape
+      ? DrawingToolbarRow(children: [
+          drawingTool(
+              label: 'Clear',
+              icon: Icons.clear,
+              onPressed: _tape == null || _before != null
+                  ? null
+                  : () => setState(() => _tape = null)),
+          drawingTool(
+              label: 'Snap',
+              tooltip: 'Snap tape endpoints',
+              icon: Icons.ads_click,
+              selected: _tapeSnap,
+              onPressed: _before != null
+                  ? null
+                  : () => setState(() => _tapeSnap = !_tapeSnap)),
+        ])
+      : (_suggestion != null || _preset != null || _polygon)
+          ? _pendingControls()
+          : _multiSelect
+              ? Column(mainAxisSize: MainAxisSize.min, children: [
+                  _groupControls(),
+                  DrawingToolbarRow(children: [
+                    drawingTool(
+                        label: 'Undo',
+                        icon: Icons.undo,
+                        onPressed:
+                            _history.canUndo ? () => _restore(true) : null),
+                    drawingTool(
+                        label: 'Redo',
+                        icon: Icons.redo,
+                        onPressed:
+                            _history.canRedo ? () => _restore(false) : null),
+                    if (_canDeleteGeometry)
+                      drawingTool(
+                          label: 'Delete',
+                          tooltip: 'Delete selected geometry',
+                          icon: Icons.delete_outline,
+                          onPressed: _requestDelete),
+                  ])
+                ])
+              : DrawingToolbarRow(children: [
                   drawingTool(
-                      label: 'Delete',
-                      tooltip: 'Delete selected geometry',
-                      icon: Icons.delete_outline,
-                      onPressed: _requestDelete),
-              ])
-            ])
-          : DrawingToolbarRow(children: [
-              drawingTool(
-                  label: 'Draw',
-                  tooltip: 'Freehand drawing',
-                  icon: Icons.gesture_outlined,
-                  selected: _tool == _Tool.smart && _outline,
-                  onPressed: () => _chooseStroke(true)),
-              drawingTool(
-                  label: 'Wall',
-                  tooltip: 'Single straight wall',
-                  icon: Icons.horizontal_rule,
-                  selected: _tool == _Tool.smart && !_outline,
-                  onPressed: () => _chooseStroke(false)),
-              drawingTool(
-                  label: 'Shapes',
-                  icon: Icons.category_outlined,
-                  onPressed: _shapes),
-              drawingTool(
-                  label: 'Pan',
-                  tooltip: 'Pan / Zoom',
-                  icon: Icons.pan_tool_outlined,
-                  selected: _tool == _Tool.pan,
-                  onPressed: () => _chooseTool(
-                      _tool == _Tool.pan ? _Tool.smart : _Tool.pan)),
-              drawingTool(
-                  label: 'Text',
-                  icon: Icons.text_fields,
-                  selected: _tool == _Tool.text,
-                  onPressed: () => _chooseTool(
-                      _tool == _Tool.text ? _Tool.smart : _Tool.text)),
-              drawingTool(
-                  label: 'Labels',
-                  tooltip: _showAllMeasurements ? 'Hide labels' : 'Show labels',
-                  icon: _showAllMeasurements
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  selected: _showAllMeasurements,
-                  onPressed: _before == null ? _toggleMeasurements : null),
-            ]);
+                      label: 'Draw',
+                      tooltip: 'Freehand drawing',
+                      icon: Icons.gesture_outlined,
+                      selected: _tool == _Tool.smart && _outline,
+                      onPressed: () => _chooseStroke(true)),
+                  drawingTool(
+                      label: _drawDashed ? 'Dashed' : 'Wall',
+                      tooltip: _drawDashed
+                          ? 'Single dashed wall'
+                          : 'Single straight wall',
+                      icon: _drawDashed
+                          ? Icons.border_style
+                          : Icons.horizontal_rule,
+                      selected: _tool == _Tool.smart && !_outline,
+                      onPressed: () => _chooseStroke(false)),
+                  drawingTool(
+                      label: 'Shapes',
+                      icon: Icons.category_outlined,
+                      onPressed: _shapes),
+                  drawingTool(
+                      label: 'Pan',
+                      tooltip: 'Pan / Zoom',
+                      icon: Icons.pan_tool_outlined,
+                      selected: _tool == _Tool.pan,
+                      onPressed: () => _chooseTool(
+                          _tool == _Tool.pan ? _Tool.smart : _Tool.pan)),
+                  drawingTool(
+                      label: 'Text',
+                      icon: Icons.text_fields,
+                      selected: _tool == _Tool.text,
+                      onPressed: () => _chooseTool(
+                          _tool == _Tool.text ? _Tool.smart : _Tool.text)),
+                  drawingTool(
+                      label: 'Labels',
+                      tooltip:
+                          _showAllMeasurements ? 'Hide labels' : 'Show labels',
+                      icon: _showAllMeasurements
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      selected: _showAllMeasurements,
+                      onPressed: _before == null ? _toggleMeasurements : null),
+                ]);
 
   @override
   Widget build(BuildContext context) => PopScope(
@@ -2408,9 +2548,13 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
                                     PopupMenuItem(
                                         value: unit, child: Text(unit.name))
                                 ],
-                            child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Text(_unit.symbol))),
+                            child: SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: Center(
+                                    child: Text(_unit.symbol,
+                                        maxLines: 1,
+                                        style: AppTypography.text12)))),
                       ]),
             body: SafeArea(
                 child: Column(children: [
@@ -2605,11 +2749,15 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
                                         origin: _origin,
                                         scale: _scale,
                                         bounds: _annotationBounds,
-                                        onEdit: (id) => _editAnnotation(id: id),
+                                        onEdit: _tool == _Tool.tape
+                                            ? null
+                                            : (id) => _editAnnotation(id: id),
                                         selected: _allSelected
                                             ? _annotations.items.keys.toSet()
                                             : _selectedAnnotations),
                                     painter: DrawingPainter(
+                                        previewDashed: _drawDashed,
+                                        tape: _tape,
                                         model: _model,
                                         allSelected: _allSelected,
                                         highlightedCorners: _pickedCorners,
@@ -2650,25 +2798,24 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
                                                         w.id
                                                   }
                                                 : const {},
-                                        highlightedWalls: _roomSelection
-                                                .isNotEmpty
-                                            ? _roomSelection
-                                            : _multiSelect
-                                                ? {
-                                                    ..._pickedWalls,
-                                                    ..._groupPreviewWalls
-                                                  }
-                                                : _selectedWall != null &&
-                                                        _model.walls
-                                                            .containsKey(
+                                        highlightedWalls:
+                                            _roomSelection.isNotEmpty
+                                                ? _roomSelection
+                                                : _multiSelect
+                                                    ? {
+                                                        ..._pickedWalls,
+                                                        ..._groupPreviewWalls
+                                                      }
+                                                    : _selectedWall != null &&
+                                                            _model.walls.containsKey(
                                                                 _selectedWall)
-                                                    ? _before != null &&
-                                                            _gestureTool ==
-                                                                _Tool.wall
-                                                        ? _model.straightRun(
-                                                            _selectedWall!)
-                                                        : {_selectedWall!}
-                                                    : const {},
+                                                        ? _before != null &&
+                                                                _gestureTool ==
+                                                                    _Tool.wall
+                                                            ? _model.straightRun(
+                                                                _selectedWall!)
+                                                            : {_selectedWall!}
+                                                        : const {},
                                         rawStroke: _suggestion != null
                                             ? _originalShape
                                             : _stroke,
@@ -2678,7 +2825,8 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
                                         presetHandle: _presetHandle,
                                         showResizeAnchors:
                                             _resizeWall || _enteringWallLength,
-                                        anglesEnabled: !_allSelected,
+                                        anglesEnabled: !_allSelected &&
+                                            _tool != _Tool.tape,
                                         labelBounds: _labels,
                                         // Panels finish layout after this painter is constructed.
                                         interfaceObstacles:
@@ -2722,9 +2870,8 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
                                         preview: _preview,
                                         selectedWall:
                                             _multiSelect ? null : _selectedWall,
-                                        selectedCorner: _multiSelect
-                                            ? null
-                                            : _selectedCorner))))),
+                                        selectedCorner:
+                                            _multiSelect ? null : _selectedCorner))))),
                   ),
                   Positioned.fill(
                     child: Offstage(
@@ -2830,6 +2977,23 @@ class _EasyFloorScreenState extends State<EasyFloorScreen> {
                                                                 WrapCrossAlignment
                                                                     .center,
                                                             children: [
+                                                              TextButton.icon(
+                                                                  onPressed:
+                                                                      _convertWallType,
+                                                                  icon: Icon(_model
+                                                                          .walls[
+                                                                              _selectedWall!]!
+                                                                          .dashed
+                                                                      ? Icons
+                                                                          .horizontal_rule
+                                                                      : Icons
+                                                                          .border_style),
+                                                                  label: Text(_model
+                                                                          .walls[
+                                                                              _selectedWall!]!
+                                                                          .dashed
+                                                                      ? 'Make normal'
+                                                                      : 'Make dashed')),
                                                               TextButton(
                                                                   onPressed: () =>
                                                                       _dimensions(

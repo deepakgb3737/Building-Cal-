@@ -63,7 +63,12 @@ class DrawingPainter extends CustomPainter {
       this.editingActive = false,
       this.labelObstacles = const [],
       this.interfaceObstacles,
+      this.tape,
+      this.previewDashed = false,
       this.labelBounds});
+  final (DrawingPoint, DrawingPoint)? tape;
+  final bool previewDashed;
+  Rect? tapeLabelBounds;
   final bool allSelected, anglesEnabled;
   final Set<int> highlightedWalls, highlightedCorners, contextWalls;
   final List<DrawingPoint> rawStroke;
@@ -90,7 +95,7 @@ class DrawingPainter extends CustomPainter {
   final Map<int, double>? labelOffsets;
   final Offset? finger;
   final double? moveOffset;
-  Set<int> get measuredWalls => preview.isNotEmpty
+  Set<int> get measuredWalls => tape != null || preview.isNotEmpty
       ? {}
       : {
           for (final w in model.walls.values)
@@ -126,6 +131,7 @@ class DrawingPainter extends CustomPainter {
     _blockedLabelPositions.clear();
     labelBounds?.clear();
     previewLabelBounds = null;
+    tapeLabelBounds = null;
     canvas.clipRect(Offset.zero & size);
     var step = 1000.0;
     while (step * scale < 35) {
@@ -199,7 +205,9 @@ class DrawingPainter extends CustomPainter {
     for (final wall in model.walls.values) {
       final a = screen(model.corners[wall.start]!),
           b = screen(model.corners[wall.end]!);
-      canvas.drawLine(
+      _wallLine(
+          canvas,
+          size,
           a,
           b,
           Paint()
@@ -215,7 +223,29 @@ class DrawingPainter extends CustomPainter {
                     highlightedWalls.contains(wall.id)
                 ? 4
                 : 2.5
-            ..strokeCap = StrokeCap.round);
+            ..strokeCap = StrokeCap.round,
+          dashed: wall.dashed);
+    }
+    if (tape case final measurement?) {
+      final a = screen(measurement.$1), b = screen(measurement.$2);
+      final ink = Paint()
+        ..color = AppColors.primary
+        ..strokeWidth = 1.5;
+      canvas.drawLine(a, b, ink);
+      for (final point in [a, b]) {
+        canvas.drawCircle(point, 5, Paint()..color = AppColors.white);
+        canvas.drawCircle(point, 5, ink..style = PaintingStyle.stroke);
+        occupied.add(Rect.fromCircle(center: point, radius: 8));
+      }
+      tapeLabelBounds = _label(
+          canvas,
+          size,
+          'Tape ${unit.format((measurement.$2 - measurement.$1).length)}',
+          a,
+          b,
+          occupied,
+          segments,
+          priority: MeasurementLabelPriority.active);
     }
     final measured = measuredWalls;
     final allSides = <int>{};
@@ -363,12 +393,19 @@ class DrawingPainter extends CustomPainter {
         final s = screen(p);
         path.lineTo(s.dx, s.dy);
       }
-      canvas.drawPath(
-          path,
-          Paint()
-            ..color = AppColors.primary
-            ..strokeWidth = 3
-            ..style = PaintingStyle.stroke);
+      final previewPaint = Paint()
+        ..color = AppColors.primary
+        ..strokeWidth = 3
+        ..style = PaintingStyle.stroke;
+      if (previewDashed) {
+        for (var i = 1; i < preview.length; i++) {
+          _wallLine(canvas, size, screen(preview[i - 1]), screen(preview[i]),
+              previewPaint,
+              dashed: true);
+        }
+      } else {
+        canvas.drawPath(path, previewPaint);
+      }
       for (var i = 1; i < preview.length; i++) {
         paintWallMarkers(canvas, size, preview[i - 1], preview[i],
             origin: origin, scale: scale);
@@ -446,6 +483,27 @@ class DrawingPainter extends CustomPainter {
             screen(guide.start), screen(guide.end), occupied, segments,
             priority: MeasurementLabelPriority.secondary);
         break;
+      }
+    }
+  }
+
+  void _wallLine(Canvas canvas, Size viewport, Offset a, Offset b, Paint ink,
+      {required bool dashed}) {
+    if (!dashed) {
+      canvas.drawLine(a, b, ink);
+      return;
+    }
+    final visible = _clipSegment((Offset.zero & viewport).inflate(4), a, b);
+    final delta = b - a;
+    if (visible == null || delta.distance < .001) return;
+    final direction = delta / delta.distance;
+    final start = (visible.$1 - a).distance;
+    final end = (visible.$2 - a).distance;
+    // Screen-space dashes stay readable; clipping bounds work at extreme zoom.
+    for (var offset = (start / 14).floor() * 14.0; offset < end; offset += 14) {
+      final from = math.max(start, offset), to = math.min(end, offset + 8);
+      if (to > from) {
+        canvas.drawLine(a + direction * from, a + direction * to, ink);
       }
     }
   }

@@ -13,11 +13,13 @@ class DrawingConflict implements Exception {
 }
 
 class DrawingWall {
-  const DrawingWall(this.id, this.start, this.end, {this.fixedLength});
+  const DrawingWall(this.id, this.start, this.end,
+      {this.fixedLength, this.dashed = false});
   final int id;
   final int start;
   final int end;
   final double? fixedLength;
+  final bool dashed;
 }
 
 class WallNetwork {
@@ -36,7 +38,8 @@ class WallNetwork {
           for (final e in corners.entries) [e.key, e.value.x, e.value.y]
         ],
         'walls': [
-          for (final w in walls.values) [w.id, w.start, w.end, w.fixedLength]
+          for (final w in walls.values)
+            [w.id, w.start, w.end, w.fixedLength, if (w.dashed) true]
         ],
         'dimensions': [
           for (final e in _dimensions.entries) [e.key, e.value.$1, e.value.$2]
@@ -61,8 +64,10 @@ class WallNetwork {
       model._nextCorner = math.max(model._nextCorner, id + 1);
     }
     for (final row in jsonArray(data['walls'])) {
-      final r = jsonArray(row, max: 4);
-      if (r.length != 4) throw const FormatException('Invalid wall.');
+      final r = jsonArray(row, max: 5);
+      if (r.length != 4 && r.length != 5) {
+        throw const FormatException('Invalid wall.');
+      }
       final id = jsonInteger(r[0]);
       if (model.walls.containsKey(id)) {
         throw const FormatException('Duplicate wall.');
@@ -72,7 +77,8 @@ class WallNetwork {
         throw const FormatException('Invalid fixed length.');
       }
       model.walls[id] = DrawingWall(id, jsonInteger(r[1]), jsonInteger(r[2]),
-          fixedLength: fixed);
+          fixedLength: fixed,
+          dashed: r.length == 5 ? jsonBoolean(r[4]) : false);
       model._nextWall = math.max(model._nextWall, id + 1);
     }
     for (final row in jsonArray(data['dimensions'])) {
@@ -132,6 +138,15 @@ class WallNetwork {
   double length(int wallId) {
     final w = walls[wallId]!;
     return (corners[w.end]! - corners[w.start]!).length;
+  }
+
+  void setDashed(int id, bool dashed) {
+    final wall = walls[id];
+    if (wall == null) {
+      throw const DrawingConflict('Select an existing wall first.');
+    }
+    walls[id] = DrawingWall(id, wall.start, wall.end,
+        fixedLength: wall.fixedLength, dashed: dashed);
   }
 
   bool isFixed(int id) =>
@@ -398,7 +413,8 @@ class WallNetwork {
       }
       for (final id in wallIds) {
         final w = walls[id]!;
-        wallMap[id] = next._edge(nodeMap[w.start]!, nodeMap[w.end]!);
+        wallMap[id] =
+            next._edge(nodeMap[w.start]!, nodeMap[w.end]!, dashed: w.dashed);
         final copy = next.walls[wallMap[id]]!;
         for (final other in original) {
           if (_intersections(next.corners[copy.start]!, next.corners[copy.end]!,
@@ -471,7 +487,8 @@ class WallNetwork {
         throw const DrawingConflict('Select an existing wall first.');
       if (next.isFixed(id)) return;
       final mm = next.length(id);
-      next.walls[id] = DrawingWall(id, wall.start, wall.end, fixedLength: mm);
+      next.walls[id] = DrawingWall(id, wall.start, wall.end,
+          fixedLength: mm, dashed: wall.dashed);
       next._dimensions[id] = ([id], mm);
     });
   }
@@ -493,7 +510,7 @@ class WallNetwork {
     _dimensions.removeWhere((_, value) => value.$1.contains(id));
     for (final w in walls.values.toList()) {
       if (!isFixed(w.id) && w.fixedLength != null)
-        walls[w.id] = DrawingWall(w.id, w.start, w.end);
+        walls[w.id] = DrawingWall(w.id, w.start, w.end, dashed: w.dashed);
     }
   }
 
@@ -597,7 +614,8 @@ class WallNetwork {
     return (corner: corner, wall: corner == null ? wallId : null);
   }
 
-  void addPolyline(List<DrawingPoint> points, {double snapRadius = 0}) {
+  void addPolyline(List<DrawingPoint> points,
+      {double snapRadius = 0, bool dashed = false}) {
     for (final point in points) {
       _checkPoint(point);
     }
@@ -612,7 +630,7 @@ class WallNetwork {
               'A wall segment is below 10 mm. Increase its length; no part of this stroke was added.');
         _checkPoint(a);
         _checkPoint(b);
-        next._insertSegment(a, b);
+        next._insertSegment(a, b, dashed: dashed);
       }
     });
   }
@@ -779,6 +797,10 @@ class WallNetwork {
         throw const DrawingConflict(
             'Join requires exactly two walls at this corner. Branch junctions cannot be removed.');
       final a = linked[0], b = linked[1];
+      if (a.dashed != b.dashed) {
+        throw const DrawingConflict(
+            'Use the same wall type before joining segments.');
+      }
       final start = a.start == id ? a.end : a.start,
           end = b.start == id ? b.end : b.start;
       final u = next.corners[start]! - next.corners[id]!,
@@ -801,7 +823,7 @@ class WallNetwork {
       next.walls.remove(a.id);
       next.walls.remove(b.id);
       next.corners.remove(id);
-      result = next._edge(start, end);
+      result = next._edge(start, end, dashed: a.dashed);
       for (final r in next._relations.values.toList()) {
         next._relations[r.id] = r.remap({
           a.id: [result!],
@@ -833,7 +855,8 @@ class WallNetwork {
       if (wall == null) throw const DrawingConflict('Select a wall first.');
       final a = next.corners[wall.start]!, b = next.corners[wall.end]!;
       final direction = (b - a) * (1 / (b - a).length);
-      next.walls[id] = DrawingWall(id, wall.start, wall.end);
+      next.walls[id] =
+          DrawingWall(id, wall.start, wall.end, dashed: wall.dashed);
       next._dimensions.removeWhere(
           (_, value) => value.$1.length == 1 && value.$1.single == id);
       next.moveCorners(switch (anchor) {
@@ -845,8 +868,8 @@ class WallNetwork {
           }
       });
       next._validate();
-      next.walls[id] =
-          DrawingWall(id, wall.start, wall.end, fixedLength: lock ? mm : null);
+      next.walls[id] = DrawingWall(id, wall.start, wall.end,
+          fixedLength: lock ? mm : null, dashed: wall.dashed);
       if (lock) next._dimensions[id] = ([id], mm);
       if (join) next._connectJunctions();
     });
@@ -1029,13 +1052,13 @@ class WallNetwork {
     return id;
   }
 
-  int _edge(int a, int b, {double? fixed}) {
+  int _edge(int a, int b, {double? fixed, bool dashed = false}) {
     for (final wall in walls.values) {
       if ((wall.start == a && wall.end == b) ||
           (wall.start == b && wall.end == a)) return wall.id;
     }
     final id = _nextWall++;
-    walls[id] = DrawingWall(id, a, b, fixedLength: fixed);
+    walls[id] = DrawingWall(id, a, b, fixedLength: fixed, dashed: dashed);
     return id;
   }
 
@@ -1061,7 +1084,7 @@ class WallNetwork {
     for (var i = 0; i < nodes.length - 1; i++) {
       final size = (corners[nodes[i + 1]]! - corners[nodes[i]]!).length;
       if (size < .001) continue;
-      replacements.add(_edge(nodes[i], nodes[i + 1]));
+      replacements.add(_edge(nodes[i], nodes[i + 1], dashed: wall.dashed));
     }
     for (final r in _relations.values.toList()) {
       _relations[r.id] = r.remap({wallId: replacements});
@@ -1078,7 +1101,7 @@ class WallNetwork {
     }
   }
 
-  void _insertSegment(DrawingPoint a, DrawingPoint b) {
+  void _insertSegment(DrawingPoint a, DrawingPoint b, {bool dashed = false}) {
     final cuts = <DrawingPoint>[a, b];
     for (final wall in walls.values.toList()) {
       final c = corners[wall.start]!, d = corners[wall.end]!;
@@ -1093,7 +1116,7 @@ class WallNetwork {
           .compareTo((corners[j]! - a).dot(direction)));
     for (var i = 0; i < nodes.length - 1; i++) {
       if ((corners[nodes[i + 1]]! - corners[nodes[i]]!).length >= .001)
-        _edge(nodes[i], nodes[i + 1]);
+        _edge(nodes[i], nodes[i + 1], dashed: dashed);
     }
   }
 
@@ -1167,10 +1190,15 @@ class WallNetwork {
       final key = a < b ? (a, b) : (b, a);
       final duplicate = edgeIds[key];
       if (duplicate == null) {
-        walls[w.id] = DrawingWall(w.id, a, b, fixedLength: w.fixedLength);
+        walls[w.id] = DrawingWall(w.id, a, b,
+            fixedLength: w.fixedLength, dashed: w.dashed);
         edgeIds[key] = w.id;
       } else {
         final canonical = duplicate;
+        if (walls[canonical]!.dashed != w.dashed) {
+          throw const DrawingConflict(
+              'Overlapping walls have different types. Convert one before merging.');
+        }
         for (final r in _relations.values.toList()) {
           _relations[r.id] = r.remap({
             w.id: [canonical]

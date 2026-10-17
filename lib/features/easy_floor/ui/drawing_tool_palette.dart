@@ -48,7 +48,13 @@ class _DrawingToolPaletteState extends State<DrawingToolPalette> {
     };
     final primaryHeight =
         DrawingToolbarRow.heightFor(context, width - 56, primaryCount) + 8;
-    final secondHeight = DrawingToolbarRow.heightFor(context, width - 8, 6);
+    final secondCount = switch (widget.child) {
+      DrawingToolbarRow(:final children) => children.length,
+      Padding(child: DrawingToolbarRow(:final children)) => children.length,
+      _ => 6,
+    };
+    final secondHeight =
+        DrawingToolbarRow.heightFor(context, width - 8, secondCount);
     final height = math.min(
         _expanded
             ? modern
