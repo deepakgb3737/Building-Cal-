@@ -12,7 +12,7 @@ void main() {
     await t.pumpAndSettle();
     expect(find.byType(PvcCeilingScreen), findsOneWidget);
     expect(find.byType(MaterialApp), findsOneWidget);
-    expect(find.text('A · Room length (ft)'), findsOneWidget);
+    expect(find.text('Room length'), findsOneWidget);
     await t.pageBack();
     await t.pumpAndSettle();
     expect(find.text('BuildCalc'), findsOneWidget);

@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../ui/app_colors.dart';
 import '../../../ui/app_typography.dart';
@@ -6,6 +5,7 @@ import '../logic/pvc_ceiling_calculator.dart';
 import 'pvc_format.dart';
 import 'pvc_ceiling_painter.dart';
 import 'pvc_section.dart';
+import 'pvc_diagram_view.dart';
 
 class PvcCeilingResults extends StatelessWidget {
   const PvcCeilingResults({super.key, required this.layout});
@@ -89,20 +89,12 @@ class PvcCeilingResults extends StatelessWidget {
   }
 
   Widget _layoutView(Layout c) {
-    return LayoutBuilder(builder: (context, box) {
-      final drawW = math.max(box.maxWidth, 700.0);
-      final g = LayoutGeometry.of(c);
-      final k = (g.vw / drawW * .65).clamp(1.0, 1.3);
-      final drawH = drawW * g.vh / g.vw;
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          width: drawW,
-          height: drawH,
-          child: CustomPaint(painter: CeilingPainter(c, k)),
-        ),
-      );
-    });
+    final g = LayoutGeometry.of(c);
+    return PvcDiagramView(
+        key: ValueKey(c),
+        size: Size(g.vw, g.vh),
+        painter: CeilingPainter(c, 1.2),
+        label: 'Calculated ceiling layout');
   }
 
   Widget _guide(Layout c) {
@@ -176,17 +168,11 @@ class PvcCeilingResults extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          LayoutBuilder(builder: (context, box) {
-            final w = math.max(box.maxWidth, 520.0);
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: w,
-                height: w * CutPainter.viewH / CutPainter.viewW,
-                child: CustomPaint(painter: CutPainter(o, c.sizes)),
-              ),
-            );
-          }),
+          PvcDiagramView(
+              key: ValueKey('${o.stock}:${o.cuts}'),
+              size: const Size(CutPainter.viewW, CutPainter.viewH),
+              painter: CutPainter(o, c.sizes),
+              label: 'Cutting diagram for ${o.stock.toInt()} ft stock'),
         ],
       ),
     );

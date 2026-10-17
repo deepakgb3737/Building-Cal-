@@ -76,6 +76,10 @@ class AppNumberField extends StatelessWidget {
       this.textInputAction,
       this.labelAbove = false,
       this.hint,
+      this.leadingLabel,
+      this.unit,
+      this.compact = false,
+      this.textAlign = TextAlign.start,
       this.prefixIcon});
 
   final String label;
@@ -89,6 +93,10 @@ class AppNumberField extends StatelessWidget {
   final bool labelAbove;
   final String? hint;
   final IconData? prefixIcon;
+  final String? leadingLabel;
+  final String? unit;
+  final bool compact;
+  final TextAlign textAlign;
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +107,12 @@ class AppNumberField extends StatelessWidget {
       focusNode: focusNode,
       textInputAction: textInputAction,
       onFieldSubmitted: onFieldSubmitted,
+      textAlign: textAlign,
+      style: compact
+          ? AppTypography.text16W700Text
+          : leadingLabel == null
+              ? null
+              : AppTypography.text18W700Text,
       keyboardType: allowCommaSeparated
           ? TextInputType.text
           : TextInputType.numberWithOptions(decimal: !integerOnly),
@@ -108,12 +122,38 @@ class AppNumberField extends StatelessWidget {
               ? [FilteringTextInputFormatter.digitsOnly]
               : [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
       decoration: InputDecoration(
+          isDense: compact ? true : null,
+          constraints: compact ? const BoxConstraints(minHeight: 48) : null,
+          contentPadding: compact
+              ? const EdgeInsets.symmetric(horizontal: 8, vertical: 10)
+              : null,
+          prefixIconConstraints: compact
+              ? const BoxConstraints(minWidth: 28, minHeight: 48)
+              : null,
+          suffixIconConstraints: compact
+              ? const BoxConstraints(minWidth: 28, minHeight: 48)
+              : null,
           labelText: labelAbove ? null : label,
           errorMaxLines: labelAbove ? 3 : null,
           hintText: hint,
-          prefixIcon: prefixIcon == null
+          prefixIcon: leadingLabel != null
+              ? Center(
+                  widthFactor: 1,
+                  heightFactor: 1,
+                  child:
+                      Text(leadingLabel!, style: AppTypography.text14W700Ink))
+              : prefixIcon == null
+                  ? null
+                  : Icon(prefixIcon, color: AppColors.neutralMuted),
+          suffixIcon: unit == null
               ? null
-              : Icon(prefixIcon, color: AppColors.neutralMuted)),
+              : Padding(
+                  padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
+                  child: Center(
+                      widthFactor: 1,
+                      heightFactor: 1,
+                      child: Text(unit!,
+                          style: AppTypography.text14Secondarytext)))),
       validator: validator,
     );
     return !labelAbove
@@ -121,7 +161,10 @@ class AppNumberField extends StatelessWidget {
         : Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(label, style: AppTypography.label),
+              Text(label,
+                  style: leadingLabel == null
+                      ? AppTypography.label
+                      : AppTypography.text14W600Text),
               const SizedBox(height: 4),
               Semantics(label: label, child: field),
             ],

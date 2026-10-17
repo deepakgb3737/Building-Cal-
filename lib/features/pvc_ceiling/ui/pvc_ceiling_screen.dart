@@ -4,7 +4,7 @@ import '../../../ui/app_colors.dart';
 import '../../../ui/app_typography.dart';
 import '../../../ui/app_widgets.dart';
 import '../logic/pvc_ceiling_calculator.dart';
-import 'pvc_ceiling_painter.dart';
+import 'pvc_measurement_guide.dart';
 import 'pvc_section.dart';
 import 'pvc_ceiling_results.dart';
 
@@ -17,6 +17,7 @@ class PvcCeilingScreen extends StatefulWidget {
 class _PvcCeilingScreenState extends State<PvcCeilingScreen>
     with WidgetsBindingObserver {
   final _form = GlobalKey<FormState>();
+  final _resultsAnchor = GlobalKey();
   final _controllers = {
     for (final key in ['A', 'B', 'C', 'D', 'E']) key: TextEditingController()
   };
@@ -69,8 +70,14 @@ class _PvcCeilingScreenState extends State<PvcCeilingScreen>
       if (!mounted) return;
       final active =
           _focus.entries.where((e) => e.value.hasFocus).firstOrNull?.key;
-      final target = _anchors[active]?.currentContext;
-      if (target != null) Scrollable.ensureVisible(target, alignment: .2);
+      var target = _anchors[active]?.currentContext;
+      if (target == null) return;
+      final box = target.findRenderObject();
+      final viewport = Scrollable.maybeOf(target)?.position.viewportDimension;
+      if (box is RenderBox && viewport != null && box.size.height > viewport) {
+        target = _focus[active]?.context ?? target;
+      }
+      Scrollable.ensureVisible(target, alignment: .2);
     });
   }
 
@@ -121,13 +128,19 @@ class _PvcCeilingScreenState extends State<PvcCeilingScreen>
   Future<void> _calculate() async {
     if (_busy) return;
     _inputError = null;
-    if (!_form.currentState!.validate()) return;
+    if (!_form.currentState!.validate()) {
+      final invalid = pvcDimensions(_shape).firstWhere(
+          (f) => pvcFieldError(_shape, f, _controllers[f.key]!.text) != null);
+      _focus[invalid.key]!.requestFocus();
+      return;
+    }
     PvcRoom room;
     try {
       room = buildPvcRoom(_shape, _values, corner: _corner);
     } on PvcInputError catch (e) {
       setState(() => _inputError = e);
       _form.currentState!.validate();
+      _focus[e.field]?.requestFocus();
       return;
     }
     FocusManager.instance.primaryFocus?.unfocus();
@@ -144,6 +157,13 @@ class _PvcCeilingScreenState extends State<PvcCeilingScreen>
       setState(() {
         _layout = result;
         _calculated = true;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _resultsAnchor.currentContext;
+        if (mounted && token == _token && target != null) {
+          Scrollable.ensureVisible(target,
+              alignment: 0, duration: const Duration(milliseconds: 180));
+        }
       });
     } catch (_) {
       if (mounted && token == _token) {
@@ -177,122 +197,131 @@ class _PvcCeilingScreenState extends State<PvcCeilingScreen>
                         child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              DropdownButtonFormField<PvcShape>(
-                                  key: const ValueKey('pvcShape'),
-                                  initialValue: _shape,
-                                  isExpanded: true,
-                                  decoration: const InputDecoration(
-                                      labelText: 'Room shape'),
-                                  items: [
-                                    for (final shape in PvcShape.values)
-                                      DropdownMenuItem(
-                                          value: shape,
-                                          child: Text(shape.label))
-                                  ],
-                                  onChanged: _selectShape),
-                              const SizedBox(height: 12),
-                              DropdownButtonFormField<String>(
-                                  key: const ValueKey('pvcStock'),
-                                  initialValue: _mode,
-                                  isExpanded: true,
-                                  decoration: const InputDecoration(
-                                      labelText: 'Planks to use'),
-                                  items: const [
-                                    DropdownMenuItem(
-                                        value: 'mix',
-                                        child: Text('Mix 10 ft + 12 ft')),
-                                    DropdownMenuItem(
-                                        value: '10', child: Text('Only 10 ft')),
-                                    DropdownMenuItem(
-                                        value: '12', child: Text('Only 12 ft'))
-                                  ],
-                                  onChanged: (value) {
-                                    if (value == null || value == _mode) return;
-                                    _invalidate();
-                                    setState(() => _mode = value);
-                                  }),
+                              _selectors(),
+                              const SizedBox(height: 6),
                               PvcSection(
-                                  title: 'Measure the lettered walls',
+                                  title: 'Room measurements',
                                   first: true,
+                                  trailing: PvcMeasurementGuide(
+                                      room: room, active: active),
                                   child: Form(
                                       key: _form,
-                                      child: LayoutBuilder(
-                                          builder: (context, box) {
-                                        final preview = room == null
-                                            ? Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 20),
-                                                child: Text(
-                                                    previewError ??
-                                                        'Enter dimensions to preview.',
-                                                    style: AppTypography
-                                                        .text13W600Error))
-                                            : PvcShapePreview(
-                                                room: room, active: active);
-                                        final fields = _fields(
-                                            box.maxWidth >= 800
-                                                ? (box.maxWidth - 24) / 2
-                                                : box.maxWidth);
-                                        return Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.stretch,
-                                            children: [
-                                              if (box.maxWidth >= 800)
-                                                Row(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Expanded(child: preview),
-                                                      const SizedBox(width: 24),
-                                                      Expanded(child: fields)
-                                                    ])
-                                              else ...[preview, fields],
-                                              const SizedBox(height: 16),
-                                              FilledButton(
-                                                  onPressed:
-                                                      _busy ? null : _calculate,
-                                                  child: _busy
-                                                      ? const SizedBox(
-                                                          width: 22,
-                                                          height: 22,
-                                                          child:
-                                                              CircularProgressIndicator(
-                                                                  strokeWidth:
-                                                                      2.5,
-                                                                  color: AppColors
-                                                                      .white))
-                                                      : const Text(
-                                                          'Calculate')),
-                                            ]);
-                                      }))),
+                                      autovalidateMode:
+                                          AutovalidateMode.onUserInteraction,
+                                      child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            if (previewError != null)
+                                              Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          bottom: 10),
+                                                  child: Text(previewError,
+                                                      style: AppTypography
+                                                          .text13W600Error)),
+                                            Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: ConstrainedBox(
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                            maxWidth: 640),
+                                                    child: LayoutBuilder(
+                                                        builder: (context,
+                                                                fieldsBox) =>
+                                                            _fields(fieldsBox
+                                                                .maxWidth)))),
+                                            const SizedBox(height: 16),
+                                            FilledButton(
+                                                onPressed:
+                                                    _busy ? null : _calculate,
+                                                child: _busy
+                                                    ? const SizedBox(
+                                                        width: 22,
+                                                        height: 22,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                                strokeWidth:
+                                                                    2.5,
+                                                                color: AppColors
+                                                                    .white))
+                                                    : const Text('Calculate')),
+                                          ]))),
                               if (_error != null)
                                 Padding(
                                     padding: const EdgeInsets.only(top: 10),
                                     child: Text(_error!,
                                         style: AppTypography.text13W600Error)),
                               if (_calculated)
-                                PvcCeilingResults(layout: _layout),
+                                KeyedSubtree(
+                                    key: _resultsAnchor,
+                                    child: PvcCeilingResults(layout: _layout)),
                             ]))))));
   }
 
+  Widget _selectors() => LayoutBuilder(builder: (context, box) {
+        final controls = <Widget>[
+          DropdownButtonFormField<PvcShape>(
+              key: const ValueKey('pvcShape'),
+              initialValue: _shape,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Room shape'),
+              items: [
+                for (final shape in PvcShape.values)
+                  DropdownMenuItem(value: shape, child: Text(shape.label))
+              ],
+              onChanged: _selectShape),
+          DropdownButtonFormField<String>(
+              key: const ValueKey('pvcStock'),
+              initialValue: _mode,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Planks to use'),
+              items: const [
+                DropdownMenuItem(
+                    value: 'mix', child: Text('Mix 10 ft + 12 ft')),
+                DropdownMenuItem(value: '10', child: Text('Only 10 ft')),
+                DropdownMenuItem(value: '12', child: Text('Only 12 ft'))
+              ],
+              onChanged: (value) {
+                if (value == null || value == _mode) return;
+                _invalidate();
+                setState(() => _mode = value);
+              }),
+        ];
+        if (box.maxWidth >= 620) {
+          return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: controls[0]),
+            const SizedBox(width: 14),
+            Expanded(child: controls[1])
+          ]);
+        }
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [controls[0], const SizedBox(height: 12), controls[1]]);
+      });
+
   Widget _fields(double width) {
     final fields = pvcDimensions(_shape);
+    final twoColumns =
+        width >= 280 * MediaQuery.textScalerOf(context).scale(16) / 16;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (_shape == PvcShape.t || _shape == PvcShape.u)
         const Padding(
             padding: EdgeInsets.only(bottom: 12),
             child: Text('Leave E empty to center the stem or opening.',
                 style: AppTypography.text14Greymuted)),
-      Wrap(spacing: 14, runSpacing: 12, children: [
+      Wrap(spacing: 12, runSpacing: 10, children: [
         for (var i = 0; i < fields.length; i++)
           SizedBox(
               key: _anchors[fields[i].key],
-              width: width >= 460 ? (width - 14) / 2 : width,
+              width: twoColumns ? (width - 12) / 2 : width,
               child: AppNumberField(
                   key: ValueKey('pvcField${_shape.name}${fields[i].key}'),
-                  label: '${fields[i].key} · ${fields[i].label} (ft)',
+                  label: fields[i].label,
+                  leadingLabel: fields[i].key,
+                  unit: 'ft',
+                  compact: true,
+                  textAlign: TextAlign.end,
                   controller: _controllers[fields[i].key]!,
                   focusNode: _focus[fields[i].key],
                   labelAbove: true,

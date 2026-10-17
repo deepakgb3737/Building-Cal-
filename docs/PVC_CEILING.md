@@ -17,6 +17,32 @@ stale/default shape. Validation appears beside the affected field when calculati
 Inputs scroll into view when focus or keyboard geometry changes. Controls,
 labels, previews and results adapt to narrow and landscape viewports.
 
+Measurement inputs use the shared `AppNumberField` with an always-visible wall
+letter and `ft` unit, a full name above, and a larger right-aligned value. Empty
+optional inputs keep their letter/unit visible. PVC uses the shared compact
+field variant with 48-pixel minimum height and two columns on standard phone
+widths; enlarged text falls back to one column. Field columns adapt to text
+scaling, and cramped keyboard viewports prioritize the editable value when the
+complete label and field cannot fit. Other numeric fields retain their existing
+appearance unless they explicitly enable these shared presentation options.
+
+### UI Refinement
+
+The measurement preview is a tappable thumbnail beside the section title,
+not a full-width diagram above the inputs. Tapping opens a larger scrollable
+guide; closing it preserves entered values and the current shape. Letter badges
+use collision-aware placement and leader lines when moved;
+the active letter stays in the same position while focusing its field. Shape
+and stock selectors share a row on wide screens and stack on narrow screens.
+Calculating reveals the result summary; invalid input focuses its field.
+
+Plans and cutting diagrams use bounded, fitted viewports rather than forced
+700/520 px widths or potentially screen-sized vertical diagrams. Pinch or the
+zoom controls reveal detail; Fit restores the full view. Page scrolling remains
+available over a fitted diagram, and dragging explores a zoomed diagram. Camera
+transforms do not change dimensions, cutting quantities or any calculation data.
+There are no calculation-engine changes in this UI refinement.
+
 For L-shapes, C is the **step across** and D is the **step down**, as defined by
 this supplied HTML. C is not an arm-width field from EasyFloor's separate preset
 workflow. The preview always shows the edge being measured.

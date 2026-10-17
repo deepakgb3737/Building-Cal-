@@ -6,10 +6,12 @@ class PvcSection extends StatelessWidget {
   final String title;
   final Widget child;
   final bool first;
+  final Widget? trailing;
   const PvcSection(
       {super.key,
       required this.title,
       required this.child,
+      this.trailing,
       this.first = false});
 
   @override
@@ -17,7 +19,7 @@ class PvcSection extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: EdgeInsets.only(top: first ? 0 : 22),
-      padding: const EdgeInsets.only(top: 22),
+      padding: EdgeInsets.only(top: first ? 12 : 18),
       decoration: first
           ? null
           : const BoxDecoration(
@@ -26,8 +28,15 @@ class PvcSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTypography.text20BoldInk),
-          const SizedBox(height: 12),
+          if (trailing == null)
+            Text(title, style: AppTypography.text17W700Text)
+          else
+            Row(children: [
+              Expanded(child: Text(title, style: AppTypography.text17W700Text)),
+              const SizedBox(width: 8),
+              trailing!,
+            ]),
+          const SizedBox(height: 10),
           child,
         ],
       ),
