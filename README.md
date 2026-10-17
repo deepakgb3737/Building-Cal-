@@ -16,6 +16,13 @@ respective licenses.
 
 A Flutter app with grid ceiling planning, unit conversion, area conversion, calculator, compass, and drawer calculation tools.
 
+Home also opens [PVC Ceiling](docs/PVC_CEILING.md), integrated from the supplied
+standalone calculator and updated multi-shape HTML. Rectangle, L/U/T, angled and
+cut-corner rooms share a polygon-based multi-piece optimizer. Its validation lives in
+`lib/features/pvc_ceiling/logic/`; screens and painters consume those results in
+`ui/`. Controls use the shared application theme, and PVC material drawing
+colors are centralized in `BuildCalcColors`, exposed through `AppColors`.
+
 Home also includes Paint, Flooring Tiles, Concrete Volume and Plaster estimates,
 with separate calculation engines, your supplied icons, editable product rates,
 and copyable results. See [Material Calculators](docs/MATERIAL_CALCULATORS.md) for

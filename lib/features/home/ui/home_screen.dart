@@ -13,6 +13,7 @@ import 'package:grid_ceiling_calculator/features/flooring_tiles/ui/flooring_tile
 import 'package:grid_ceiling_calculator/features/concrete/ui/concrete_screen.dart';
 import 'package:grid_ceiling_calculator/features/plaster/ui/plaster_screen.dart';
 import 'package:grid_ceiling_calculator/features/easy_floor/ui/easy_floor_screen.dart';
+import 'package:grid_ceiling_calculator/features/pvc_ceiling/ui/pvc_ceiling_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -68,8 +69,16 @@ class HomeScreen extends StatelessWidget {
         },
       ),
       _HomeTool(
+        title: 'PVC Ceiling',
+        asset: 'assets/icons/inside /pvc_ceiling.png',
+        tint: AppColors.primary,
+        onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const PvcCeilingScreen())),
+      ),
+      _HomeTool(
         title: 'EasyFloor',
-        asset: 'assets/icons/inside /flooring_tiles.png',
+        asset: 'assets/icons/inside /easy_floor.png',
+        tint: AppColors.primary,
         onTap: () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const EasyFloorScreen())),
       ),
@@ -249,6 +258,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Image.asset(
                   tool.asset,
+                  color: tool.tint,
                   width: 56,
                   height: 56,
                   fit: BoxFit.contain,
@@ -284,9 +294,11 @@ class _HomeTool {
     required this.title,
     required this.asset,
     required this.onTap,
+    this.tint,
   });
 
   final String title;
   final String asset;
   final VoidCallback onTap;
+  final Color? tint;
 }

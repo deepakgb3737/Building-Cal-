@@ -28,6 +28,15 @@ and the rights to supplied icons, fonts and other assets before public release.
 
 ## Distribution
 
+Home's PVC Ceiling (`view-sequential`) and EasyFloor (`floor-plan`) icons are
+from Pictogrammers Material Design Icons:
+https://github.com/Templarian/MaterialDesign . The original SVGs are retained in
+`assets/icons/source/`; PNG derivatives are bundled for Flutter and tinted using
+the shared theme. Source collection terms and the Apache 2.0 license are retained
+in `docs/licenses/`, with a bundled copy at `assets/icons/MDI_LICENSE.txt`.
+These notices apply to these two icons, not the separately
+supplied legacy illustrations.
+
 The destination repository already contained the owner's MIT license, Copyright
 (c) 2026 Deepak. It is preserved in the root LICENSE file. This notice supplements
 that license with attribution; it does not replace third-party license terms.

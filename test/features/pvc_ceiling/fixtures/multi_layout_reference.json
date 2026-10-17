@@ -1,0 +1,104 @@
+[
+  {
+    "shape": "rect",
+    "area": 159.5,
+    "turned": true,
+    "rows": 15,
+    "q10": 0,
+    "q12": 15,
+    "total": 180,
+    "pieceTotal": 165,
+    "joints": 0,
+    "sizes": [
+      11
+    ]
+  },
+  {
+    "shape": "L",
+    "area": 162,
+    "turned": true,
+    "rows": 17,
+    "q10": 2,
+    "q12": 13,
+    "total": 176,
+    "pieceTotal": 174,
+    "joints": 6,
+    "sizes": [
+      12,
+      4.75,
+      2.25
+    ]
+  },
+  {
+    "shape": "T",
+    "area": 144,
+    "turned": true,
+    "rows": 17,
+    "q10": 3,
+    "q12": 11,
+    "total": 162,
+    "pieceTotal": 158,
+    "joints": 17,
+    "sizes": [
+      3.75,
+      2.25,
+      12,
+      2
+    ]
+  },
+  {
+    "shape": "U",
+    "area": 150,
+    "turned": false,
+    "rows": 13,
+    "q10": 0,
+    "q12": 14,
+    "total": 168,
+    "pieceTotal": 166,
+    "joints": 20,
+    "sizes": [
+      2.75,
+      2.25,
+      12,
+      4
+    ]
+  },
+  {
+    "shape": "V",
+    "area": 140,
+    "turned": false,
+    "rows": 13,
+    "q10": 14,
+    "q12": 2,
+    "total": 164,
+    "pieceTotal": 154.742,
+    "joints": 10,
+    "sizes": [
+      2.018,
+      5.463,
+      8.908,
+      10,
+      2.353,
+      4
+    ]
+  },
+  {
+    "shape": "K",
+    "area": 144,
+    "turned": false,
+    "rows": 12,
+    "q10": 1,
+    "q12": 13,
+    "total": 166,
+    "pieceTotal": 158.226,
+    "joints": 10,
+    "sizes": [
+      9.711,
+      10.941,
+      6.086,
+      6.701,
+      12,
+      2
+    ]
+  }
+]

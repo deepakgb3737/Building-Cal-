@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grid_ceiling_calculator/features/home/ui/home_screen.dart';
 import 'package:grid_ceiling_calculator/ui/app_theme.dart';
+import 'package:grid_ceiling_calculator/ui/app_colors.dart';
 import 'package:grid_ceiling_calculator/features/unit_converter/ui/unit_converter.dart';
 
 void main() {
@@ -28,6 +29,19 @@ void main() {
       expect(image.width, 56);
     }
     expect(find.byType(Image), findsAtLeastNWidgets(6));
+    for (final item in [
+      ('PVC Ceiling', 'pvc_ceiling'),
+      ('EasyFloor', 'easy_floor')
+    ]) {
+      final tile =
+          find.ancestor(of: find.text(item.$1), matching: find.byType(InkWell));
+      final image = tester.widget<Image>(
+          find.descendant(of: tile, matching: find.byType(Image)));
+      final asset =
+          ((image.image as ResizeImage).imageProvider as AssetImage).assetName;
+      expect(asset, 'assets/icons/inside /${item.$2}.png');
+      expect(image.color, AppColors.primary);
+    }
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('Unit Converter'));
     await tester.pumpAndSettle();

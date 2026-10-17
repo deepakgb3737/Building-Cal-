@@ -68,6 +68,15 @@ Existing screens still contain local shadows, opacity values, elevation, and res
 - Use package imports across feature boundaries. Update all callers, tests, and documentation when moving files; do not leave duplicate implementations or obsolete forwarding files.
 
 - UI collects input, calls an engine/service, and renders returned data.
+- PVC Ceiling uses `lib/features/pvc_ceiling/logic/` for stock optimization,
+  dimension validation, row widths, quantities and blade-aware tape readings.
+  Keep those calculations out of its screens and painters. Its material drawing
+  palette is defined in `BuildCalcColors` and exposed by `AppColors`; controls
+  use the shared app theme, not a nested MaterialApp or feature-local theme.
+  Shape inputs, lettered previews and calculated rows must share `PvcRoom`
+  mappings. Never substitute default geometry for invalid inputs. Keep exact
+  one-sided polygon row envelopes in logic, and clip rendered planks to the
+  returned polygon; do not calculate an independent rectangular purchase count.
 - Formulas, conversion factors, validation, placements, and material optimization belong in existing engines/services, not widgets or painters.
 - 2D drawings, 3D drawings, and material summaries must use consistent calculation results. Do not independently recalculate quantities in drawings.
 - Preserve units, precision, placement modes, gap accounting, and optimization behavior unless explicitly requested otherwise.

@@ -3,6 +3,18 @@ import 'package:flutter/material.dart';
 /// Shared color tokens for a premium building/construction calculator app.
 /// Use these tokens across every screen; avoid hard-coded colors in widgets.
 abstract final class BuildCalcColors {
+  // PVC material drawings: identical piece colors in plans and cutting guides.
+  static const pvcPieces = [
+    Color(0xFF6B4A3A),
+    Color(0xFF9A7B68),
+    Color(0xFF2B2B2B),
+    Color(0xFFB8A08C)
+  ];
+  static const pvcJoint = Color(0xFFA8644A);
+  static const pvcWall = Color(0xFFE4DBD1);
+  static const pvcScrap = Color(0xFFF3EEE9);
+  static const pvcScrapHatch = Color(0xFFDDD2C7);
+  static const pvcScrapText = Color(0xFF7A6C61);
   // Brand
   static const brand = Color(0xFFC65D17);
   static const brandHover = Color(0xFFA94B10);

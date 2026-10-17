@@ -3,6 +3,12 @@ import '../core/theme/build_calc_colors.dart';
 
 // Keep drawing/material colors distinct from general interface colors.
 abstract final class AppColors {
+  static const pvcPieces = BuildCalcColors.pvcPieces;
+  static const pvcJoint = BuildCalcColors.pvcJoint;
+  static const pvcWall = BuildCalcColors.pvcWall;
+  static const pvcScrap = BuildCalcColors.pvcScrap;
+  static const pvcScrapHatch = BuildCalcColors.pvcScrapHatch;
+  static const pvcScrapText = BuildCalcColors.pvcScrapText;
   static final drawingGridMinor = border.withValues(alpha: .35);
   static final drawingGridMajor = border.withValues(alpha: .7);
   static const background = BuildCalcColors.lightBackground;
