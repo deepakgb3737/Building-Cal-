@@ -1,0 +1,164 @@
+{
+  "brand": {
+    "primary": "#C65D17",
+    "primaryHover": "#A94B10",
+    "primaryPressed": "#873B0C",
+    "primarySoft": "#FCEBDD",
+    "primaryOn": "#FFFFFF",
+    "secondary": "#263746",
+    "secondarySoft": "#E8EEF2"
+  },
+  "light": {
+    "background": "#F6F5F2",
+    "surface": "#FFFFFF",
+    "surfaceSubtle": "#F0EFEB",
+    "surfaceElevated": "#FFFFFF",
+    "textPrimary": "#20252B",
+    "textSecondary": "#626B73",
+    "textMuted": "#858D94",
+    "border": "#E2E4E5",
+    "borderStrong": "#C7CDD1",
+    "divider": "#ECEDEB",
+    "disabled": "#B8BEC3",
+    "disabledSurface": "#ECEEED",
+    "focus": "#2563EB",
+    "selection": "#FCEBDD",
+    "overlay": "#171B20"
+  },
+  "dark": {
+    "background": "#111519",
+    "surface": "#191F24",
+    "surfaceSubtle": "#20272D",
+    "surfaceElevated": "#252D34",
+    "textPrimary": "#F4F5F6",
+    "textSecondary": "#B4BDC5",
+    "textMuted": "#89949D",
+    "border": "#303A42",
+    "borderStrong": "#48545E",
+    "divider": "#293138",
+    "disabled": "#64717B",
+    "disabledSurface": "#252C32",
+    "focus": "#7AA7FF",
+    "selection": "#49301F",
+    "overlay": "#000000"
+  },
+  "status": {
+    "success": {
+      "main": "#218653",
+      "lightBg": "#E5F5EB",
+      "darkBg": "#173B2A",
+      "onLight": "#17643E",
+      "onDark": "#8FE0B1"
+    },
+    "warning": {
+      "main": "#A96700",
+      "lightBg": "#FFF3D8",
+      "darkBg": "#463414",
+      "onLight": "#7A4A00",
+      "onDark": "#FFD27A"
+    },
+    "error": {
+      "main": "#C23838",
+      "lightBg": "#FDEAEA",
+      "darkBg": "#481F22",
+      "onLight": "#A32828",
+      "onDark": "#FFAAAA"
+    },
+    "info": {
+      "main": "#2563A6",
+      "lightBg": "#E8F1FC",
+      "darkBg": "#1A3049",
+      "onLight": "#1F548D",
+      "onDark": "#A6CFFF"
+    }
+  },
+  "categories": {
+    "ceiling": {
+      "accent": "#B45309",
+      "lightBg": "#FFF0D9",
+      "darkBg": "#422B16"
+    },
+    "measurement": {
+      "accent": "#2563EB",
+      "lightBg": "#E8F0FF",
+      "darkBg": "#1B2D4D"
+    },
+    "area": {
+      "accent": "#7C3AED",
+      "lightBg": "#F0E9FF",
+      "darkBg": "#30204B"
+    },
+    "flooring": {
+      "accent": "#A16207",
+      "lightBg": "#FBF1D4",
+      "darkBg": "#3D3218"
+    },
+    "insulation": {
+      "accent": "#0E7490",
+      "lightBg": "#DFF5F8",
+      "darkBg": "#173A43"
+    },
+    "concrete": {
+      "accent": "#596674",
+      "lightBg": "#E9EDF0",
+      "darkBg": "#2B343D"
+    },
+    "painting": {
+      "accent": "#BE185D",
+      "lightBg": "#FCE7F3",
+      "darkBg": "#482238"
+    },
+    "plumbing": {
+      "accent": "#0369A1",
+      "lightBg": "#E0F2FE",
+      "darkBg": "#18384C"
+    },
+    "electrical": {
+      "accent": "#A16207",
+      "lightBg": "#FEF3C7",
+      "darkBg": "#403415"
+    },
+    "woodwork": {
+      "accent": "#8A4B20",
+      "lightBg": "#F7E8D9",
+      "darkBg": "#402B1E"
+    },
+    "roofing": {
+      "accent": "#C2410C",
+      "lightBg": "#FFEDD5",
+      "darkBg": "#472719"
+    },
+    "waterproofing": {
+      "accent": "#0F766E",
+      "lightBg": "#DDF7F1",
+      "darkBg": "#173C38"
+    },
+    "brickwork": {
+      "accent": "#9A3412",
+      "lightBg": "#FBE9DF",
+      "darkBg": "#45271D"
+    },
+    "cost": {
+      "accent": "#218653",
+      "lightBg": "#E5F5EB",
+      "darkBg": "#173B2A"
+    }
+  },
+  "charts": {
+    "primarySeries": "#C65D17",
+    "secondarySeries": "#2563EB",
+    "tertiarySeries": "#0F766E",
+    "quaternarySeries": "#7C3AED",
+    "gridLight": "#E2E4E5",
+    "gridDark": "#303A42"
+  },
+  "rules": {
+    "mainBackground": "light.background / dark.background",
+    "cards": "light.surface / dark.surface",
+    "primaryButton": "brand.primary with white text in light mode; use a slightly brighter orange #FF8A3D with dark text #24170F in dark mode",
+    "inputs": "surface background, border color; focused border uses focus color",
+    "categoryColorUsage": "Use category accent only for icon, small label, progress indicator, or selected state. Keep large content areas neutral.",
+    "results": "Use textPrimary for main result; status colors only for status meaning, never decoration.",
+    "shadows": "Light mode: subtle shadow only on floating surfaces; dark mode: prefer borders and tonal elevation over shadows."
+  }
+}

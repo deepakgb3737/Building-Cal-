@@ -1,0 +1,26 @@
+name: easy_floor
+description: A Flutter package for creating and editing floor plan blueprints with rooms, doors, and SVG export/import capabilities.
+version: 1.0.0
+publish_to: none
+homepage: https://github.com/YeshiwasT/flutter_floor_plan
+repository: https://github.com/YeshiwasT/flutter_floor_plan
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  vector_math: ^2.1.4
+  file_picker: ^10.3.8
+  xml: ^6.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+

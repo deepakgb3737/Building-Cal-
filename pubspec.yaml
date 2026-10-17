@@ -1,0 +1,32 @@
+name: grid_ceiling_calculator
+description: A Flutter app for calculating grid ceiling T-channel placements and material requirements
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  audioplayers: ^6.1.0
+  path_provider: ^2.1.4
+  record: ^6.2.0
+  flutter_compass: ^0.8.1
+  easy_floor:
+    path: packages/easy_floor
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
+    - assets/icons/inside /
